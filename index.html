@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hitachi DBU | Web Journey</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .custom-shadow { box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1); }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        #log-container::-webkit-scrollbar { width: 4px; }
+        #log-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans">
+
+    <aside class="fixed left-0 top-0 h-full w-64 bg-white border-r border-slate-200 z-50 hidden md:block">
+        <div class="p-6">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b3/Hitachi_logo.svg" alt="Hitachi" class="w-32 mb-8">
+            <nav class="space-y-1">
+                <a href="#" class="flex items-center space-x-3 p-3 bg-red-50 text-red-600 rounded-lg font-medium">
+                    <i class="fa-solid fa-gauge"></i> <span>Dashboard</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 p-3 text-slate-500 hover:bg-slate-50 rounded-lg transition">
+                    <i class="fa-solid fa-print"></i> <span>Printing</span>
+                </a>
+                <a href="#" class="flex items-center space-x-3 p-3 text-slate-500 hover:bg-slate-50 rounded-lg transition">
+                    <i class="fa-solid fa-barcode"></i> <span>Scanning</span>
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <main class="md:ml-64 p-4 md:p-8">
+        <header class="flex justify-between items-center mb-8">
+            <div>
+                <h1 class="text-2xl font-bold">Hardware Orchestrator</h1>
+                <p class="text-slate-500">Connected to local bridge at port 8080</p>
+            </div>
+            <div id="connection-badge" class="px-4 py-2 rounded-full bg-slate-200 text-slate-600 text-sm font-semibold flex items-center">
+                <span class="w-2 h-2 rounded-full bg-slate-400 mr-2"></span> DISCONNECTED
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-2xl custom-shadow border border-slate-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-blue-50 text-blue-600 rounded-xl"><i class="fa-solid fa-file-invoice"></i></div>
+                    <span class="text-xs font-bold text-blue-600 uppercase">Cheque Scanner</span>
+                </div>
+                <h3 id="micr-data" class="text-lg font-mono text-slate-400">Wait for scan...</h3>
+                <p class="text-sm text-slate-500 mt-2">Ready for CTS-2010</p>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl custom-shadow border border-slate-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><i class="fa-solid fa-fingerprint"></i></div>
+                    <span class="text-xs font-bold text-emerald-600 uppercase">Biometrics</span>
+                </div>
+                <div id="fp-status" class="text-sm font-medium">Capture not started</div>
+                <div class="w-full bg-slate-100 h-1.5 rounded-full mt-4"><div id="fp-progress" class="bg-emerald-500 h-1.5 rounded-full w-0 transition-all duration-500"></div></div>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl custom-shadow border border-slate-100">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-orange-50 text-orange-600 rounded-xl"><i class="fa-solid fa-credit-card"></i></div>
+                    <span class="text-xs font-bold text-orange-600 uppercase">POS Terminal</span>
+                </div>
+                <div id="pos-status" class="text-sm font-medium">Idle</div>
+                <p class="text-xs text-slate-400 mt-2">Feitian Device</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-white p-8 rounded-3xl custom-shadow border border-slate-100">
+                <h2 class="text-xl font-bold mb-6">Operations</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="actions.printReceipt()" class="p-4 bg-slate-900 text-white rounded-2xl hover:bg-slate-800 transition flex flex-col items-center">
+                        <i class="fa-solid fa-receipt mb-2"></i> <span class="text-sm">Print Receipt</span>
+                    </button>
+                    <button onclick="actions.scanCheque()" class="p-4 border-2 border-slate-100 rounded-2xl hover:border-red-200 hover:bg-red-50 transition flex flex-col items-center">
+                        <i class="fa-solid fa-magnifying-glass mb-2 text-red-500"></i> <span class="text-sm">Scan Cheque</span>
+                    </button>
+                    <button onclick="actions.captureBiometric()" class="p-4 border-2 border-slate-100 rounded-2xl hover:border-emerald-200 hover:bg-emerald-50 transition flex flex-col items-center">
+                        <i class="fa-solid fa-id-card mb-2 text-emerald-500"></i> <span class="text-sm">Biometrics</span>
+                    </button>
+                    <button onclick="document.getElementById('file-input').click()" class="p-4 border-2 border-slate-100 rounded-2xl hover:border-blue-200 hover:bg-blue-50 transition flex flex-col items-center">
+                        <i class="fa-solid fa-print mb-2 text-blue-500"></i> <span class="text-sm">Print Card</span>
+                    </button>
+                    <input type="file" id="file-input" class="hidden" multiple onchange="actions.printCard(this)">
+                </div>
+                
+                <div class="mt-8 border-t border-slate-100 pt-6">
+                    <h4 class="text-sm font-bold text-slate-400 uppercase mb-4">Hardware Preview</h4>
+                    <div class="flex space-x-4">
+                        <div class="w-1/2 h-32 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+                            <img id="front-preview" class="max-h-full">
+                            <span class="text-slate-300 text-xs">Front View</span>
+                        </div>
+                        <div class="w-1/2 h-32 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden">
+                            <img id="back-preview" class="max-h-full">
+                            <span class="text-slate-300 text-xs">Rear View</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 rounded-3xl p-6 text-emerald-400 font-mono text-xs overflow-hidden h-[500px] flex flex-col shadow-2xl">
+                <div class="flex items-center space-x-2 mb-4 border-b border-slate-800 pb-3">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="ml-4 text-slate-500">hitachi-bridge-logs</span>
+                </div>
+                <div id="log-container" class="flex-1 overflow-y-auto space-y-1">
+                    <div class="text-slate-500">> Initializing Web Journey...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const CLIENT_ID = "HITACHI_DBU_001";
+        const BASE_URL = "http://localhost:8080";
+        let socket;
+
+        // Initialize WebSocket Connection
+        function initSocket() {
+            socket = new WebSocket(`ws://localhost:8080/events/${CLIENT_ID}`);
+            
+            socket.onopen = () => {
+                updateBadge(true);
+                addLog("Connected to Orchestrator Bridge", "success");
+            };
+
+            socket.onclose = () => {
+                updateBadge(false);
+                addLog("Disconnected from Bridge. Retrying...", "error");
+                setTimeout(initSocket, 3000);
+            };
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleHardwareUpdate(data);
+            };
+        }
+
+        // Logic to route hardware callbacks
+        function handleHardwareUpdate(data) {
+            addLog(`Received: ${data.taskName} | ${data.message}`, data.success ? "success" : "error");
+
+            if (data.taskName === "CHEQUE_SCANNER_TASK" && data.success) {
+                document.getElementById('micr-data').innerText = data.details.micrData || "MICR READ";
+                if(data.details.FRONT_IMAGE_BYTES) {
+                    document.getElementById('front-preview').src = `data:image/jpeg;base64,${data.details.FRONT_IMAGE_BYTES}`;
+                    document.getElementById('front-preview').previousElementSibling?.remove();
+                }
+            }
+
+            if (data.taskName === "FINGERPRINT_SCANNER_TASK") {
+                document.getElementById('fp-status').innerText = data.message;
+                document.getElementById('fp-progress').style.width = data.progress + "%";
+            }
+        }
+
+        // UI Helpers
+        function addLog(msg, type = "info") {
+            const container = document.getElementById('log-container');
+            const entry = document.createElement('div');
+            const color = type === "success" ? "text-emerald-400" : (type === "error" ? "text-red-400" : "text-slate-300");
+            entry.className = color;
+            entry.innerHTML = `<span class="text-slate-600">[${new Date().toLocaleTimeString()}]</span> > ${msg}`;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function updateBadge(connected) {
+            const badge = document.getElementById('connection-badge');
+            badge.className = connected 
+                ? "px-4 py-2 rounded-full bg-emerald-100 text-emerald-600 text-sm font-semibold flex items-center transition-all"
+                : "px-4 py-2 rounded-full bg-slate-200 text-slate-600 text-sm font-semibold flex items-center transition-all";
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full ${connected ? 'bg-emerald-500' : 'bg-slate-400'} mr-2"></span> ${connected ? 'CONNECTED' : 'OFFLINE'}`;
+        }
+
+        // Hardware Actions
+        const actions = {
+            async printReceipt() {
+                addLog("Initiating Receipt Print...");
+                const res = await fetch(`${BASE_URL}/printReceipt`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ clientId: CLIENT_ID, jsonData: "{}" })
+                });
+                const { jobId } = await res.json();
+                addLog(`Print Job ID: ${jobId}`);
+            },
+
+            async scanCheque() {
+                addLog("Starting Cheque Scanner...");
+                await fetch(`${BASE_URL}/scanCheque`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ clientId: CLIENT_ID })
+                });
+            },
+
+            async captureBiometric() {
+                addLog("Awaiting Biometric Data...");
+                await fetch(`${BASE_URL}/captureFingerprint`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ clientId: CLIENT_ID, pidData: "<PidOptions>...</PidOptions>" })
+                });
+            },
+
+            async printCard(input) {
+                if (input.files.length < 2) {
+                    alert("Please select front and back card images!");
+                    return;
+                }
+                addLog("Uploading Card Assets...");
+                const formData = new FormData();
+                formData.append("clientId", CLIENT_ID);
+                formData.append("type", "1");
+                formData.append("front", input.files[0]);
+                formData.append("back", input.files[1]);
+
+                await fetch(`${BASE_URL}/printCard`, {
+                    method: 'POST',
+                    body: formData
+                });
+            }
+        };
+
+        initSocket();
+    </script>
+</body>
+</html>
